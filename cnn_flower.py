@@ -4,40 +4,34 @@ import os, sys
 import numpy as np
 import glob, shutil
 import pandas as pd
+import tensorflow as tf
 
-flower_path = 'flowers'
-
-flower_type = os.listdir(flower_path)
-print("Types of flowers found: ", len(flower_type))
-print("Categories of flowers: ", flower_type)
-
-flowers = []
-
-for species in flower_type:
-    #get all file names
-    all_flowers = os.listdir(flower_path + '/' + species)
-    #add to list
-    for flower in all_flowers:
-        flowers.append((species, flower_path + '/' + species + '/' + flower))
-
-flowers = pd.DataFrame(data=flowers, columns=['category', 'image'], index=None)
-flowers.head()
-
-print("Total number of flowers in the dataset: ", len(flowers))
-fl_count = flowers['category'].value_counts()
-print("Flowers in each category: ")
-print(fl_count)
+test_path = os.listdir('flowers/test')
+train_path = os.listdir('flowers/training')
+print("Number of test images found: ", len(test_path))
+print("Number of train images found: ", len(train_path))
 
 
-for category in fl_count.index:
-    samples = flowers['image'][flowers['category'] == category].values
-    perm = np.random.permutation(samples)
-    #copy first 200 images as test data and the rest as training data
-    for i in range(200):
-        name = perm[i].split('/')[-1]
-        shutil.copyfile(perm[i], './data/test/' + str(category) + '/' + name)
-    for i in range(201, len(perm)):
-        name = perm[i].split('/')[-1]
-        shutil.copyfile(perm[i], './data/training/' + str(category) + '/' + name)
+test_dataset = tf.data.Dataset.from_tensor_slices(test_path)
+train_dataset = tf.data.Dataset.from_tensor_slices(train_path)
 
-    
+#parse image in the dataset using map function
+def _parse_function(test_path):
+    image_string = tf.read_file(test_path)
+    image_decoded = tf.image.decode_jpeg(image_string, channels=3)
+    image = tf.cast(image_decoded, tf.float32)
+    return image
+
+test_dataset = test_dataset.map(_parse_function)
+test_dataset = test_dataset.batch(2)
+train_dataset = train_dataset.map(_parse_function)
+train_dataset = train_dataset.batch(2)
+
+#create iterator and input tensor
+test_iterator = test_dataset.make_one_shot_iterator()
+test_images = test_iterator.get_next()
+train_iterator = train_dataset.make_one_shot_iterator()
+train_images = train_iterator.get_next()
+
+
+
