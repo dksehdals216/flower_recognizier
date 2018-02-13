@@ -23,3 +23,13 @@ for species in flower_type:
 flowers = pd.DataFrame(data=flowers, columns=['category', 'image'], index=None)
 flowers.head()
 
+print("Total number of flowers in the dataset: ", len(flowers))
+fl_count = flowers['category'].value_counts()
+print("Flowers in each category: ")
+print(fl_count)
+
+
+for category in fl_count.index:
+    samples = flowers['image'][flowers['category'] == category].value
+    perm = np.random.permutation(samples)
+
